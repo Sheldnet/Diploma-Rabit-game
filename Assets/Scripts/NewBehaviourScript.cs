@@ -6,6 +6,13 @@ using UnityEngine;
 
 public class NewBehaviourScript : MonoBehaviour
 {
+    private enum State
+    {
+        Normal,
+        Jumping,
+    }
+    private State state;
+
     [SerializeField] private Rigidbody _rb;
     [SerializeField] private float jumpAngle = 25f;
 
@@ -27,44 +34,58 @@ public class NewBehaviourScript : MonoBehaviour
     private bool _hasJumped;
 
 
-    private void Start()
+    private void Awake()
     {
         _rb = GetComponent<Rigidbody>();
         Cursor.lockState = CursorLockMode.Locked;
+        state = State.Normal;
     }
 
     private void Update()
     {
-
-        GatheringInputs();
-        HandlerGrounding();
-
-        if (isGrounded)
+        switch (state)
         {
-            _traj.ShowTrajectory(transform.position, CalculateJumpForce(jumpAngle));
+            case State.Normal:
 
-            if (Input.GetKeyDown(KeyCode.Space))
-            {
+                GatheringInputs();
+                HandlerGrounding();
+
                 if (isGrounded)
                 {
-                    jumpForceVector = CalculateJumpForce(jumpAngle);
-                    savedJumpForceVector = jumpForceVector;
-                    _rb.AddForce(jumpForceVector, ForceMode.Impulse); ;
-                    isGrounded = false;
-                    _isJumping = true;
-                    _traj.ShowTrajectory(transform.position, jumpForceVector);
+                    _traj.ShowTrajectory(transform.position, CalculateJumpForce(jumpAngle));
+
+                    HandleJuomInput();
+                    HandleWalking();
                 }
                 else
                 {
-                    savedJumpForceVector = Vector3.zero; // —бросить сохраненный вектор прыжка
+                    HandleAirMovement();
                 }
-            }
+                break;
 
-            HandleWalking();
+            case State.Jumping:
+                break;
         }
-        else
+    }
+
+    private void HandleJuomInput()
+    {
+        if (Input.GetKeyDown(KeyCode.Space))
         {
-            HandleAirMovement();
+            if (isGrounded)
+            {
+                jumpForceVector = CalculateJumpForce(jumpAngle);
+                savedJumpForceVector = jumpForceVector;
+                _rb.AddForce(jumpForceVector, ForceMode.Impulse); ;
+                isGrounded = false;
+                _isJumping = true;
+                _traj.ShowTrajectory(transform.position, jumpForceVector);
+                state = State.Jumping;
+            }
+            else
+            {
+                savedJumpForceVector = Vector3.zero; // —бросить сохраненный вектор прыжка
+            }
         }
     }
 
@@ -196,6 +217,7 @@ public class NewBehaviourScript : MonoBehaviour
             OnTouchedGround?.Invoke();
             _traj.ClearTrajectory();
             jumpForceVector = Vector3.zero;
+            state = State.Normal;
         }
         else if (isGrounded && !grounded)
         {
@@ -228,6 +250,7 @@ public class NewBehaviourScript : MonoBehaviour
         if (collision.gameObject.CompareTag("Ground"))
         {
             savedJumpForceVector = Vector3.zero; // —брасываем сохраненный вектор прыжка
+            state = State.Normal;
         }
     }
     private struct FrameInputs

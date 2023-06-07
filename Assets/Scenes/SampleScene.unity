@@ -193,7 +193,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 158111166}
-  m_LocalRotation: {x: -0.023668388, y: 0.000000029802326, z: -0.000000014901163, w: 0.9997199}
+  m_LocalRotation: {x: -0.023668366, y: -0.00000005960465, z: 0.000000029802326, w: 0.9997199}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -357,7 +357,7 @@ MonoBehaviour:
   jumpForceMagnitude: 10
   jumpAngleIncrement: 5
   _traj: {fileID: 422097969}
-  _walkSpeed: 5
+  _walkSpeed: 2
   _acceleration: 2
   _maxWalkingPenalty: 0.5
   _currentMovementLerpSpeed: 100
@@ -365,8 +365,8 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 64
   _grounderOffset: -1
-  _grounderRadius: 0.5
-  isGrounded: 0
+  _grounderRadius: 0.2
+  isGrounded: 1
 --- !u!1 &422097968
 GameObject:
   m_ObjectHideFlags: 0
@@ -1394,7 +1394,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1586535907}
-  m_LocalRotation: {x: -0.047218047, y: -0, z: -0, w: 0.9988846}
+  m_LocalRotation: {x: -0.04721804, y: 0.00000008940697, z: -0.000000074505806, w: 0.9988847}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
