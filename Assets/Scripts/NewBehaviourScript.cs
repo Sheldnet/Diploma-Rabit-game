@@ -60,7 +60,7 @@ namespace Character
 
                     if (isGrounded)
                     {
-                        _traj.ShowTrajectory(transform.position, CalculateJumpForce(jumpAngle) + walkDirection + _dir);
+                        _traj.ShowTrajectory(transform.position, CalculateJumpForce(jumpAngle) + _dir + _dir);
 
                         HandleJumpInput();
                         HandleWalking();
@@ -85,12 +85,11 @@ namespace Character
             {
                 if (isGrounded)
                 {
-                    jumpForceVector = CalculateJumpForce(jumpAngle);
-                    savedJumpForceVector = jumpForceVector;
+                    jumpForceVector = CalculateJumpForce(jumpAngle) + _dir + _dir;
                     _rb.AddForce(jumpForceVector, ForceMode.Impulse); ;
                     isGrounded = false;
                     _isJumping = true;
-                    _traj.ShowTrajectory(transform.position, jumpForceVector + _dir);
+                    _traj.ShowTrajectory(transform.position, jumpForceVector + (_dir / 2 ));
                     state = State.Jumping;
                 }
                 else
@@ -118,43 +117,45 @@ namespace Character
         private Vector3 _dir;
 
         private void HandleWalking()
-        {  //Доделать или переделать
-            float targetAngle = Mathf.Atan2(_inputs.X, _inputs.Z) * Mathf.Rad2Deg + _camTrans.eulerAngles.y;
-            float angle = Mathf.SmoothDampAngle(transform.eulerAngles.y, targetAngle, ref rotationSpeed, turnSmoothTime);
-            transform.rotation = Quaternion.Euler(0f, angle, 0f);
-            Vector3 moveDir = (Quaternion.Euler(-0f, targetAngle, 0f) * Vector3.forward).normalized;
-            //controller.Move(moveDir * speed * Time.deltaTime);
+        {
+            if (_dir.magnitude > 0)
+            {
+                float targetAngle = Mathf.Atan2(_inputs.X, _inputs.Z) * Mathf.Rad2Deg + _camTrans.eulerAngles.y;
+                float angle = Mathf.SmoothDampAngle(transform.eulerAngles.y, targetAngle, ref rotationSpeed, turnSmoothTime);
+                transform.rotation = Quaternion.Euler(0f, angle, 0f);
 
-            _isWalking = _inputs.X != 0f || _inputs.Z != 0f;
+                Vector3 moveDir = (Quaternion.Euler(0f, targetAngle, 0f) * Vector3.forward).normalized;
 
+                _isWalking = _inputs.X != 0f || _inputs.Z != 0f;
 
                 _currentMovementLerpSpeed = Mathf.MoveTowards(_currentMovementLerpSpeed, 100, _wallJumpMovementLerp * Time.deltaTime);
 
+                if (_dir != Vector3.zero)
+                    _currentWalkingPenalty += _acceleration * Time.deltaTime;
+                else
+                    _currentWalkingPenalty -= _acceleration * Time.deltaTime;
 
-            if (_dir != Vector3.zero)
-                _currentWalkingPenalty += _acceleration * Time.deltaTime;
-            else
-                _currentWalkingPenalty -= _acceleration * Time.deltaTime;
+                _currentWalkingPenalty = Mathf.Clamp(_currentWalkingPenalty, _maxWalkingPenalty, 1);
 
-            _currentWalkingPenalty = Mathf.Clamp(_currentWalkingPenalty, _maxWalkingPenalty, 1);
+                var targetVel = moveDir * _currentWalkingPenalty * _walkSpeed;
 
-            var targetVel = new Vector3(walkDirection.x, _rb.velocity.y, walkDirection.z) * _currentWalkingPenalty * _walkSpeed;
+                if (!_isJumping)
+                {
+                    targetVel += savedJumpForceVector;
+                    savedJumpForceVector = Vector3.zero;
+                }
 
-            if (!_isJumping)
-            {
-                targetVel += savedJumpForceVector;
-                savedJumpForceVector = Vector3.zero;
-            }
+                var idealVel = new Vector3(targetVel.x, _rb.velocity.y, targetVel.z);
+                _rb.velocity = Vector3.MoveTowards(_rb.velocity, idealVel, _currentMovementLerpSpeed * Time.deltaTime);
 
-            var idealVel = new Vector3(targetVel.x, _rb.velocity.y, targetVel.z);
-            _rb.velocity = Vector3.MoveTowards(_rb.velocity, (idealVel + moveDir)/2, _currentMovementLerpSpeed * Time.deltaTime);
-
-            if (_isJumping)
-            {
-                savedJumpForceVector = Vector3.zero;
-                _isJumping = false;
+                if (_isJumping)
+                {
+                    savedJumpForceVector = Vector3.zero;
+                    _isJumping = false;
+                }
             }
         }
+
 
 
         private void HandleAirMovement()
@@ -179,8 +180,8 @@ namespace Character
             _inputs.RawZ = (int)Input.GetAxisRaw("Vertical");
             _inputs.Z = Input.GetAxis("Vertical");
 
-            _dir = new Vector3(_inputs.X, 0, _inputs.Z);
-            walkDirection = new Vector3(_inputs.X, 0f, _inputs.Z);
+            _dir = transform.TransformDirection(new Vector3(_inputs.X, 0, _inputs.Z));
+
 
             //if (_dir != Vector3.zero ) _anim.transform.forward = _dir;
             //_anim.SetInteger("RawZ", _inputs.RawZ);
