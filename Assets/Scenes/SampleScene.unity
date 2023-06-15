@@ -193,7 +193,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 158111166}
-  m_LocalRotation: {x: -0.023668379, y: 9.5823095e-30, z: -6.775322e-30, w: 0.9997199}
+  m_LocalRotation: {x: -0.023668379, y: -1.2475392e-28, z: 6.7430996e-29, w: 0.9997199}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -352,21 +352,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cbbe2e69e0933d64fad0258b2b51d6ff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _state: 0
   _rb: {fileID: 327023917}
   _traj: {fileID: 422097969}
   _playerTrans: {fileID: 327023921}
   _camTrans: {fileID: 884644539}
+  _cam: {fileID: 0}
   _anim: {fileID: 327023923}
-  jumpAngle: 25
-  _wallJumpMovementLerp: 20
-  jumpForceMagnitude: 10
-  jumpAngleIncrement: 5
-  maxPlusJumpAngle: 90
-  maxMinusJumpAngle: -90
-  _walkSpeed: 2
+  jumpAngle: -60
+  _walkSpeed: 3
   _acceleration: 2
   _maxWalkingPenalty: 0.5
   _currentMovementLerpSpeed: 100
+  _airControlInterpolationFactor: 0.8
+  _wallJumpMovementLerp: 20
+  _airControlFactor: 1
+  _jumpVelocityFalloff: 8
+  _fallMultiplier: 7
+  jumpForceMagnitude: 10
+  jumpAngleIncrement: 5
+  maxPlusJumpAngle: -15
+  maxMinusJumpAngle: -90
   _groundMask:
     serializedVersion: 2
     m_Bits: 64
@@ -773,7 +779,7 @@ BoxCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 783739949}
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 13400000, guid: 644d5d92040af1a4188f8217077efbd6, type: 2}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -992,7 +998,7 @@ MonoBehaviour:
   m_YAxis:
     Value: 1
     m_SpeedMode: 0
-    m_MaxSpeed: 3
+    m_MaxSpeed: 1.5
     m_AccelTime: 0.2
     m_DecelTime: 0.1
     m_InputAxisName: Mouse Y
@@ -1016,12 +1022,12 @@ MonoBehaviour:
   m_XAxis:
     Value: 0
     m_SpeedMode: 0
-    m_MaxSpeed: 400
+    m_MaxSpeed: 300
     m_AccelTime: 0.1
     m_DecelTime: 0.1
     m_InputAxisName: Mouse X
     m_InputAxisValue: 0
-    m_InvertInput: 1
+    m_InvertInput: 0
     m_MinValue: -180
     m_MaxValue: 180
     m_Wrap: 1
@@ -1046,7 +1052,7 @@ MonoBehaviour:
   m_Orbits:
   - m_Height: 19.5
     m_Radius: 29.81
-  - m_Height: 4.79
+  - m_Height: 2.64
     m_Radius: 23.54
   - m_Height: -0.7
     m_Radius: 7.42
@@ -1421,7 +1427,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1586535907}
-  m_LocalRotation: {x: -0.04721798, y: 0.000000030442074, z: -0.000000017920318, w: 0.9988846}
+  m_LocalRotation: {x: -0.04721798, y: 0.00000003150489, z: -0.000000018545967, w: 0.9988846}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0

@@ -14,88 +14,47 @@ namespace Character
             Normal,
             Jumping,
         }
-        private State state;
 
+        [SerializeField] private State _state;
         [SerializeField] private Rigidbody _rb;
         [SerializeField] private TrajectoryRenderer _traj;
         [SerializeField] private Transform _playerTrans;
         [SerializeField] private Transform _camTrans;
+        [SerializeField] private Camera _cam;
         [SerializeField] private Animator _anim;
-        [SerializeField] private float jumpAngle = 25f;
+        [SerializeField] private float jumpAngle = 60f;
 
         private FrameInputs _inputs;
-
-        [Header("Jumping")]
-        [SerializeField] private float _wallJumpMovementLerp = 20;
-        private bool _isJumpingForward;
-        private float jumpAngleRad;
-        public float jumpForceMagnitude = 10f;
-        public float jumpAngleIncrement = 5f; // Шаг изменения угла прыжка
-        private Vector3 jumpForceVector;
-        private Vector3 savedJumpForceVector;
-        public float maxPlusJumpAngle; // Максимальный угол прыжка в градусах
-        public float maxMinusJumpAngle; // Максимальный угол прыжка в градусах
-
-
-
-        private bool _isJumping = false;
-        private bool _hasJumped;
-
 
         private void Awake()
         {
             _rb = GetComponent<Rigidbody>();
             Cursor.lockState = CursorLockMode.Locked;
-            state = State.Normal;
+            _state = State.Normal;
         }
 
         private void Update()
         {
-            switch (state)
+
+            switch (_state)
             {
                 case State.Normal:
 
-                    GatheringInputs();
                     HandlerGrounding();
+                    GatheringInputs();
 
                     if (isGrounded)
                     {
-                        _traj.ShowTrajectory(transform.position, CalculateJumpForce(jumpAngle) + _dir + _dir);
-
+                        _traj.ShowTrajectory(transform.position, CalculateJumpForce(jumpAngle) + _rb.velocity.normalized);
                         HandleJumpInput();
                         HandleWalking();
-                    }
-                    else
-                    {
-                        HandleAirMovement();
+
                     }
                     break;
 
                 case State.Jumping:
+                    HandleAirMovementInput();
                     break;
-            }
-        }
-
-
-
-
-        private void HandleJumpInput()
-        {
-            if (Input.GetKeyDown(KeyCode.Space))
-            {
-                if (isGrounded)
-                {
-                    jumpForceVector = CalculateJumpForce(jumpAngle) + _dir + _dir;
-                    _rb.AddForce(jumpForceVector, ForceMode.Impulse); ;
-                    isGrounded = false;
-                    _isJumping = true;
-                    _traj.ShowTrajectory(transform.position, jumpForceVector + (_dir / 2 ));
-                    state = State.Jumping;
-                }
-                else
-                {
-                    savedJumpForceVector = Vector3.zero; // Сбросить сохраненный вектор прыжка
-                }
             }
         }
 
@@ -108,8 +67,6 @@ namespace Character
         [SerializeField] private float _currentMovementLerpSpeed = 100;
         //[SerializeField] private float _rotateSpeed = 0.5f;
         private float _currentWalkingPenalty;
-        private Vector3 walkDirection;
-        private bool _isWalking;
 
         private float rotationSpeed;
         private float turnSmoothTime = 0.1f;
@@ -125,53 +82,40 @@ namespace Character
                 transform.rotation = Quaternion.Euler(0f, angle, 0f);
 
                 Vector3 moveDir = (Quaternion.Euler(0f, targetAngle, 0f) * Vector3.forward).normalized;
-
-                _isWalking = _inputs.X != 0f || _inputs.Z != 0f;
-
                 _currentMovementLerpSpeed = Mathf.MoveTowards(_currentMovementLerpSpeed, 100, _wallJumpMovementLerp * Time.deltaTime);
-
-                if (_dir != Vector3.zero)
-                    _currentWalkingPenalty += _acceleration * Time.deltaTime;
-                else
-                    _currentWalkingPenalty -= _acceleration * Time.deltaTime;
-
                 _currentWalkingPenalty = Mathf.Clamp(_currentWalkingPenalty, _maxWalkingPenalty, 1);
 
                 var targetVel = moveDir * _currentWalkingPenalty * _walkSpeed;
-
-                if (!_isJumping)
-                {
-                    targetVel += savedJumpForceVector;
-                    savedJumpForceVector = Vector3.zero;
-                }
-
                 var idealVel = new Vector3(targetVel.x, _rb.velocity.y, targetVel.z);
                 _rb.velocity = Vector3.MoveTowards(_rb.velocity, idealVel, _currentMovementLerpSpeed * Time.deltaTime);
-
-                if (_isJumping)
-                {
-                    savedJumpForceVector = Vector3.zero;
-                    _isJumping = false;
-                }
             }
         }
 
 
-
-        private void HandleAirMovement()
+        private Vector3 CalculateJumpForce(float jumpAngle)
         {
-            if (_isWalking)
-            {
-                var airVelocity = new Vector3(_inputs.X * _walkSpeed, _rb.velocity.y, _inputs.Z * _walkSpeed);
-                _rb.velocity = Vector3.Lerp(_rb.velocity, airVelocity, _currentMovementLerpSpeed * Time.deltaTime);
-            }
+            jumpAngleRad = jumpAngle * Mathf.Deg2Rad;
+
+            Vector3 characterDirection = transform.forward;
+            // Рассчитываем вектор прыжка с учетом угла и магнитуды
+            Vector3 jumpDirection = Quaternion.AngleAxis(jumpAngle, transform.right) * characterDirection;
+            Vector3 jumpForce = jumpDirection * jumpForceMagnitude;
+
+
+            return jumpForce;
         }
+
+        //private void HandleAirMovement()
+        //{
+        //    var airVelocity = new Vector3(_inputs.X * _walkSpeed, _rb.velocity.y, _inputs.Z * _walkSpeed);
+        //    _rb.velocity = Vector3.Lerp(_rb.velocity, airVelocity, _currentMovementLerpSpeed * Time.deltaTime);
+        //}
 
         #endregion
 
         #region Inputs
 
-
+        [SerializeField] private float _airControlInterpolationFactor = 0.8f;
 
         private void GatheringInputs()
         {
@@ -204,31 +148,74 @@ namespace Character
                 Debug.Log(jumpAngle);
             }
 
-            if (!_isJumping && _inputs.Z > 0)
-            {
-                // Если мы не прыгаем и вводим положительное значение по оси Z,
-                // то прыжок происходит вперед
-                _isJumpingForward = true;
-            }
-            else
-            {
-                _isJumpingForward = false;
-            }
-            if (!isGrounded)
-            {
-                walkDirection = Vector3.zero;
-            }
-
             //TODO: Анимация
+        }
+
+        #endregion
+
+        #region Jumping
+
+        [Header("Jumping")]
+        [SerializeField] private float _wallJumpMovementLerp = 20;
+        [SerializeField] private float _airControlFactor;
+        [SerializeField] private float _jumpVelocityFalloff = 8;
+        [SerializeField] private float _fallMultiplier = 7;
+
+        private float jumpAngleRad;
+        public float jumpForceMagnitude = 10f;
+        public float jumpAngleIncrement = 5f; // Шаг изменения угла прыжка
+        private Vector3 jumpForceVector;
+        public float maxPlusJumpAngle; // Максимальный угол прыжка в градусах
+        public float maxMinusJumpAngle; // Максимальный угол прыжка в градусах
+        private Vector3 airMovementInput;
+
+        private bool _isJumping = false;
+        private bool _hasJumped;
+
+        private void HandleAirMovementInput()
+        {
+            float airMovementInputX = Input.GetAxis("Horizontal");
+            float airMovementInputZ = Input.GetAxis("Vertical");
+
+            // Применить коррекцию к вектору движения в воздухе
+            airMovementInput = _playerTrans.TransformDirection(new Vector3(airMovementInputX, 0f, airMovementInputZ));
+            Vector3 targetVelocity = _rb.velocity + airMovementInput * _walkSpeed;
+            _rb.velocity = Vector3.Lerp(_rb.velocity, targetVelocity, _airControlInterpolationFactor * Time.deltaTime);
+
+            //if(!exitedCollision && !isGrounded)
+            //{
+            //    _state = State.Normal;
+            //}
+        }
+
+        private void HandleJumpInput()
+        {
+            if (Input.GetButton("Fire1"))
+            {
+                if (isGrounded && !_hasJumped) // Добавляем проверку наличия столкновения с землей и флага _hasJumped
+                {
+                    jumpForceVector = CalculateJumpForce(jumpAngle);
+                    _rb.AddForce(jumpForceVector, ForceMode.Impulse);
+                    isGrounded = false;
+                    _isJumping = true;
+                    _traj.ShowTrajectory(transform.position, CalculateJumpForce(jumpAngle) + _rb.velocity);
+                    _state = State.Jumping;
+
+                    _hasJumped = true; // Устанавливаем флаг _hasJumped в true после выполнения прыжка
+                    if (_rb.velocity.y < _jumpVelocityFalloff || _rb.velocity.y > 0 && !Input.GetButton("Fire1"))
+                        _rb.velocity += _fallMultiplier * Physics.gravity.y * Vector3.up * Time.deltaTime;
+                }
+            }
         }
         #endregion
 
         #region Detection
 
-
         [Header("Detection")][SerializeField] private LayerMask _groundMask;
         [SerializeField] private float _grounderOffset = -1, _grounderRadius = 0.2f;
         public bool isGrounded = true;
+        private bool exitedCollision = false;
+
 
         public static event Action OnTouchedGround;
 
@@ -245,27 +232,23 @@ namespace Character
                 OnTouchedGround?.Invoke();
                 _traj.ClearTrajectory();
                 jumpForceVector = Vector3.zero;
-                state = State.Normal;
+                _state = State.Normal;
             }
-            else if (isGrounded && !grounded)
+            else if (isGrounded && !grounded) // Добавляем условие проверки предыдущего значения isGrounded
             {
                 isGrounded = false;
                 transform.SetParent(null);
             }
+
+
         }
-        #endregion
 
-        private Vector3 CalculateJumpForce(float jumpAngle)
+        private void OnDrawGizmos()
         {
-            jumpAngleRad = jumpAngle * Mathf.Deg2Rad;
+            Gizmos.color = Color.red;
 
-            Vector3 characterDirection = transform.forward;
-            // Рассчитываем вектор прыжка с учетом угла и магнитуды
-            Vector3 jumpDirection = Quaternion.AngleAxis(jumpAngle, transform.right) * characterDirection;
-            Vector3 jumpForce = jumpDirection * jumpForceMagnitude;
-
-
-            return jumpForce;
+            // Grounder
+            Gizmos.DrawWireSphere(transform.position + new Vector3(0, _grounderOffset), _grounderRadius);
         }
 
         private void OnCollisionEnter(Collision collision)
@@ -273,14 +256,34 @@ namespace Character
             // Проверяем, столкнулись ли с землей после прыжка
             if (collision.gameObject.CompareTag("Ground"))
             {
-                savedJumpForceVector = Vector3.zero; // Сбрасываем сохраненный вектор прыжка
-                state = State.Normal;
+                _state = State.Normal;
+                exitedCollision = false;
+
             }
         }
+        private void OnCollisionExit(Collision collision)
+        {
+            if (collision.gameObject.CompareTag("Ground"))
+            {
+                exitedCollision = true;
+            }
+        }
+        //private void OnCollisionStay(Collision collision)
+        //{
+        //    if (collision.gameObject.CompareTag("Ground"))
+        //    {
+        //        _state = State.Normal;
+        //    }
+        //}
+
         private struct FrameInputs
         {
             public float X, Z;
             public int RawX, RawZ;
         }
+
+        #endregion
+
+
     }
 }
