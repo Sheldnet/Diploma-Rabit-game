@@ -201,9 +201,7 @@ namespace Character
                     _traj.ShowTrajectory(transform.position, CalculateJumpForce(jumpAngle) + _rb.velocity);
                     _state = State.Jumping;
 
-                    _hasJumped = true; // Устанавливаем флаг _hasJumped в true после выполнения прыжка
-                    if (_rb.velocity.y < _jumpVelocityFalloff || _rb.velocity.y > 0 && !Input.GetButton("Fire1"))
-                        _rb.velocity += _fallMultiplier * Physics.gravity.y * Vector3.up * Time.deltaTime;
+                    _hasJumped = true; // Устанавливаем флаг _hasJumped в true после выполнения прыжк
                 }
             }
         }
