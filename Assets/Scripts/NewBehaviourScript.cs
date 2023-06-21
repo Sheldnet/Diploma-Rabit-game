@@ -23,6 +23,7 @@ namespace Character
         [SerializeField] private Camera _cam;
         [SerializeField] private Animator _anim;
         [SerializeField] private float jumpAngle = 60f;
+        private LayerMask PlayerCollisionMask;
 
         private FrameInputs _inputs;
 
@@ -160,6 +161,9 @@ namespace Character
         [SerializeField] private float _airControlFactor;
         [SerializeField] private float _jumpVelocityFalloff = 8;
         [SerializeField] private float _fallMultiplier = 7;
+        [SerializeField] private float _coyoteTime = 0.3f;
+        private float _timeLeftGrounded = -10;
+
 
         private float jumpAngleRad;
         public float jumpForceMagnitude = 10f;
@@ -181,18 +185,13 @@ namespace Character
             airMovementInput = _playerTrans.TransformDirection(new Vector3(airMovementInputX, 0f, airMovementInputZ));
             Vector3 targetVelocity = _rb.velocity + airMovementInput * _walkSpeed;
             _rb.velocity = Vector3.Lerp(_rb.velocity, targetVelocity, _airControlInterpolationFactor * Time.deltaTime);
-
-            //if(!exitedCollision && !isGrounded)
-            //{
-            //    _state = State.Normal;
-            //}
         }
 
         private void HandleJumpInput()
         {
             if (Input.GetButton("Fire1"))
             {
-                if (isGrounded && !_hasJumped) // Добавляем проверку наличия столкновения с землей и флага _hasJumped
+                if (isGrounded && !_hasJumped || Time.time < _timeLeftGrounded + _coyoteTime)
                 {
                     jumpForceVector = CalculateJumpForce(jumpAngle);
                     _rb.AddForce(jumpForceVector, ForceMode.Impulse);
